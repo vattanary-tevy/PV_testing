@@ -391,7 +391,7 @@ class MainApp(QWidget):
         # Layout setup
         layout = QVBoxLayout()
         layout.addWidget(self.camera_app)           # Embed camera app
-        layout.addWidget(self.trigger_btn)          # Add trigger button
+        # layout.addWidget(self.trigger_btn)          # Add trigger button
 
         self.setLayout(layout)
 
