@@ -1,19 +1,8 @@
-from PIL import Image, ImageTk
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import numpy as np
 from vmbpy import *
-from datetime import datetime
 # from avaspec import *
 import sys, time, signal
 import cv2
-import matplotlib.ticker as ticker
-import pyvisa
-import os
-import pandas as pd
 from labjack import ljm
-import math
-import socket
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel, QSizePolicy
@@ -30,17 +19,6 @@ TRIG_LINE = "FIO4"
 
 # start in input mode
 ljm.eWriteName(handle, TRIG_LINE, 0)   # 0 = input/high-Z
-
-def send_trigger(pulse_us=100):
-    """
-    drive input low for pulse_us microseconds, then release it so the 5V pull-up resistor 
-    returns the line to logic-high
-    """
-    ljm.eWriteName(handle, TRIG_LINE, 1)   # output mode
-    ljm.eWriteName(handle, TRIG_LINE, 0)    # drive low
-    time.sleep(pulse_us / 1_000_000)
-    ljm.eWriteName(handle, TRIG_LINE, 0)   # back to input
-    print("5V trigger sent")
 
 
 '''
@@ -99,13 +77,13 @@ class CameraApp(QWidget):
     def initialize_camera(self):
         try:
             self.vimba = VmbSystem.get_instance()
-            self.vimba.__enter__()  # enter context manually
+            self.vimba.__enter__()
             cams = self.vimba.get_all_cameras()
             if not cams:
                 self.image_label.setText("No cameras found!")
                 return
             self.cam = cams[0]
-            self.cam.__enter__()  # open camera context manually
+            self.cam.__enter__()
 
             # Set pixel format BEFORE grabbing images
             supported_formats = self.cam.get_pixel_formats()
@@ -149,10 +127,7 @@ class CameraApp(QWidget):
                 pixmap = QPixmap.fromImage(q_img)
                 self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
 
-                # Plot histogram
                 self.hist_canvas.plot_histogram(image_rgb)
-
-                self.image_label.setText("Snapshot taken 100μs after trigger.")
 
                 # Safely stop streaming after this callback exits
                 QTimer.singleShot(0, lambda: cam.stop_streaming())
@@ -160,10 +135,10 @@ class CameraApp(QWidget):
             # === Start Streaming and Trigger ===
             self.cam.start_streaming(handler)
 
-            send_trigger()                   # Fire LabJack 5V trigger
-            print("5V Trigger sent.")
             time.sleep(0.0001)               # 100 µs delay
             self.cam.TriggerSoftware.run()   # Software trigger to camera
+            self.image_label.setText("Snapshot taken 100μs after trigger.")
+
 
         except Exception as e:
             self.image_label.setText(f"Error capturing snapshot:\n{e}")
@@ -196,10 +171,6 @@ class MainApp(QWidget):
 
         # Create CameraApp widget
         self.camera_app = CameraApp()
-
-        # Trigger button
-        # self.trigger_btn = QPushButton("Fire 5V Pulse")
-        # self.trigger_btn.clicked.connect(lambda: send_trigger(100))
 
         # Layout setup
         layout = QVBoxLayout()

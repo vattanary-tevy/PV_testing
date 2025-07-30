@@ -4,13 +4,12 @@ import sys, time, signal
 import cv2
 from labjack import ljm
 from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import Qt, QTimer, QObject
+from PyQt5.QtCore import Qt, QObject
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel, QSizePolicy, QHBoxLayout, QTextEdit, QVBoxLayout, QMainWindow
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import csv
 from datetime import datetime
-import threading
 
 
 '''
@@ -39,45 +38,45 @@ def send_trigger(pulse_us=100):
 Avantas spectrometer
 '''
 
-class SpectrometerWorker(QObject):
-    finished = pyqtSignal()
-    result = pyqtSignal(object, object, object, object)
-    error = pyqtSignal(str)
+# class SpectrometerWorker(QObject):
+#     finished = pyqtSignal()
+#     result = pyqtSignal(object, object, object, object)
+#     error = pyqtSignal(str)
 
-    def __init__(self, int_time, int_delay, num_ave, num_scans):
-        super().__init__()
-        self.int_time = int_time
-        self.int_delay = int_delay
-        self.num_ave = num_ave
-        self.num_scans = num_scans
+#     def __init__(self, int_time, int_delay, num_ave, num_scans):
+#         super().__init__()
+#         self.int_time = int_time
+#         self.int_delay = int_delay
+#         self.num_ave = num_ave
+#         self.num_scans = num_scans
 
-    def run(self):
-        try:
-            # Setup with hardware trigger
-            trig_mode = 0   # hardware = 1, software = 0
-            wavelength_calibration, handle, pixels, measconfig = avantes_init(
-                self.int_time, self.int_delay, self.num_ave, trig_mode
-            )
+#     def run(self):
+#         try:
+#             # Setup with hardware trigger
+#             trig_mode = 0   # hardware = 1, software = 0
+#             wavelength_calibration, handle, pixels, measconfig = avantes_init(
+#                 self.int_time, self.int_delay, self.num_ave, trig_mode
+#             )
 
-            AVS_PrepareMeasure(handle, measconfig)
+#             AVS_PrepareMeasure(handle, measconfig)
 
-            send_trigger(pulse_us=100)
+#             send_trigger(pulse_us=100)
 
-            AVS_Measure(handle, -1, self.num_scans)
+#             AVS_Measure(handle, -1, self.num_scans)
 
-            for i in range(self.num_scans):
-                while not AVS_PollScan(handle):
-                    time.sleep(0.001)
+#             for i in range(self.num_scans):
+#                 while not AVS_PollScan(handle):
+#                     time.sleep(0.001)
 
-            ret_arr, timestamp_arr, spectra_data_arr, wavelengths = avantes_readout(
-                pixels, wavelength_calibration, self.num_scans, handle, self.int_time
-            )
+#             ret_arr, timestamp_arr, spectra_data_arr, wavelengths = avantes_readout(
+#                 pixels, wavelength_calibration, self.num_scans, handle, self.int_time
+#             )
 
-            self.result.emit(ret_arr, timestamp_arr, spectra_data_arr, wavelengths)
-        except Exception as e:
-            self.error.emit(str(e))
-        finally:
-            self.finished.emit()
+#             self.result.emit(ret_arr, timestamp_arr, spectra_data_arr, wavelengths)
+#         except Exception as e:
+#             self.error.emit(str(e))
+#         finally:
+#             self.finished.emit()
 def avantes_init(int_time, int_delay, num_ave, trig_mode):
     AVS_Init(0)
     device_list = AVS_GetList()[0]
@@ -350,7 +349,6 @@ class CameraApp(QWidget):
 
             timestamp, spectrum = AVS_GetScopeData(handle)
 
-            # ✅ Use correct canvas and axes for display
             self.spectrum_axes.clear()
             self.spectrum_axes.plot(wavelengths, spectrum, label="Spectrum")
             self.spectrum_axes.set_xlabel("Wavelength (nm)")
@@ -374,10 +372,8 @@ class CameraApp(QWidget):
             frame.convert_pixel_format(PixelFormat.Mono8)
             image = frame.as_opencv_image()
 
-            # Save image
             cv2.imwrite('frame.jpg', image)
 
-            # Display image
             image_rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
             h, w, ch = image_rgb.shape
             bytes_per_line = 3 * w

@@ -25,5 +25,5 @@ Integrates an Allied Vision camera, an Avantes spectrometer, and a LabJack U3-HV
 4. Single Trigger Measure: Measures spectrum using software trigger → plots spectrum.
 
 ## Output
-Captured frames: frame.jpg
-Spectra: data/spectrum_<timestamp>.csv
+- Captured frames: frame.jpg
+- Spectra: data/spectrum_<timestamp>.csv
